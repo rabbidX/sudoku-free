@@ -1,0 +1,179 @@
+package me.garyanov.sudokufree
+
+import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import me.garyanov.sudokufree.model.SudokuCell
+import me.garyanov.sudokufree.model.SudokuRequest
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
+class SudokuViewModel : ViewModel() {
+
+    // Состояние игры
+    var board = mutableStateListOf<List<SudokuCell>>()
+        private set
+
+    var isGameWon = mutableStateOf(false)
+        private set
+
+    var selectedDifficulty = mutableStateOf("easy")
+        private set
+
+    var selectedCell = mutableStateOf<Pair<Int, Int>?>(null)
+        private set
+
+    var isLoading = mutableStateOf(false)
+        private set
+
+    // Инициализация Retrofit (обычно через DI, но для простоты тут)
+    private val api = Retrofit.Builder()
+        .baseUrl("https://www.youdosudoku.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(SudokuApi::class.java)
+
+    private var currentApiKey = "8r06MaG-mvbrgGVymkGGOPVCS3_CT21dIogoAhvSH_M"
+
+
+    fun startNewGame() {
+        Log.e("Start game", "On press button")
+        viewModelScope.launch {
+            isLoading.value = true
+            isGameWon.value = false
+            board.clear()
+
+            var attempt = 0
+            val maxAttempts = 5
+            var success = false
+
+            while (attempt < maxAttempts && !success) {
+                try {
+                    // Подготовка тела запроса
+                    val body = SudokuRequest(
+                        difficulty = selectedDifficulty.value,
+                        solution = true,
+                        array = false
+                    )
+
+                    // Запрос к API
+                    Log.e("New game request", String.format("body = %s, key = %s", body, currentApiKey))
+                    val response = api.getNewGame(body, currentApiKey)
+                    Log.e("New game", response.toString())
+
+                    // Проверка 1: Ошибка "Invalid API key" внутри JSON
+                    if (response.error?.contains("Invalid API key", ignoreCase = true) == true) {
+                        // Генерируем новый ключ
+                        val newKeyResponse = api.createKey()
+                        Log.e("New key", newKeyResponse.toString())
+                        currentApiKey = newKeyResponse.key
+                        // Не увеличиваем счетчик попыток для этой ошибки, просто повторяем запрос с новым ключом
+                        continue
+                    }
+
+                    // Проверка 2: Другие ошибки API
+                    if (response.error != null) {
+                        attempt++ // Считаем как неудачную попытку
+                        delay(500) // Небольшая пауза перед retry
+                        continue
+                    }
+
+                    // Успех: есть пазл
+                    if (response.puzzle != null && response.solution != null) {
+                        parseBoard(response.puzzle, response.solution)
+                        success = true
+                        Log.e("Parse board", "success")
+                    } else {
+                        attempt++ // Неполные данные - считаем за ошибку
+                    }
+
+                } catch (e: Exception) {
+                    // Ошибки сети (нет интернета, таймаут, 500-е ошибки сервера)
+                    Log.e("Request error", e.stackTraceToString())
+                    e.printStackTrace()
+                    attempt++
+                    if (attempt < maxAttempts) {
+                        delay(1000) // Ждем секунду перед retry
+                    }
+                }
+            }
+
+            // Если после всех попыток успеха нет, можно вывести сообщение (пока просто лог)
+            if (!success) {
+                println("Failed to load game after $maxAttempts attempts")
+            }
+
+            isLoading.value = false
+        }
+    }
+
+
+    private fun parseBoard(puzzle: String, solution: String) {
+        val newBoard = mutableListOf<List<SudokuCell>>()
+        for (i in 0 until 81) {
+            if (i % 9 == 0) newBoard.add(mutableListOf())
+
+            val puzzleChar = puzzle.getOrNull(i) ?: '0'
+            val solutionChar = solution.getOrNull(i) ?: '0'
+
+            val value = puzzleChar.digitToIntOrNull() ?: 0
+            val solutionValue = solutionChar.digitToIntOrNull() ?: 0
+
+            // Если в puzzle 0 - ячейка редактируемая
+            val isEditable = value == 0
+
+            (newBoard.last() as MutableList).add(SudokuCell(value, isEditable, solutionValue))
+        }
+        board.addAll(newBoard)
+    }
+
+    fun onCellClicked(row: Int, col: Int) {
+        if (isGameWon.value) return
+        if (board[row][col].isEditable) {
+            selectedCell.value = Pair(row, col)
+        }
+    }
+
+    fun onKeyPressed(number: Int) {
+        val (row, col) = selectedCell.value ?: return
+        if (!board[row][col].isEditable) return
+
+        // Обновляем значение
+        val currentCell = board[row][col]
+        board[row] = board[row].toMutableList().also {
+            it[col] = currentCell.copy(value = number)
+        }
+
+        // Если ввели 0, это очистка, победу не проверяем
+        if (number == 0) return
+
+        // Проверка победы
+        checkWin()
+    }
+
+    fun useHint() {
+        val (row, col) = selectedCell.value ?: return
+        if (!board[row][col].isEditable) return
+
+        val solutionValue = board[row][col].solutionValue
+        onKeyPressed(solutionValue)
+    }
+
+    fun setDifficulty(diff: String) {
+        selectedDifficulty.value = diff
+    }
+
+    private fun checkWin() {
+        // Функция all вернет true, только если условие верно для ВСЕХ ячеек
+        // Как только встретится хоть одна неверная, она остановится и вернет false
+        isGameWon.value = board.all { row ->
+            row.all { cell ->
+                cell.value == cell.solutionValue
+            }
+        }
+    }
+}
