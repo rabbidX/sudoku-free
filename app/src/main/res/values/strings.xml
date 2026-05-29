@@ -1,3 +1,8 @@
 <resources>
-    <string name="app_name">Sudoku Free</string>
+    <string name="app_name">Sudoku</string>
+    <string name="sudoku_title">Sudoku</string>
+    <string name="new_game">New Game</string>
+    <string name="you_won">You won!</string>
+    <string name="hint">Hint</string>
+    <string name="clear">Clear</string>
 </resources>

@@ -39,13 +39,24 @@ class SudokuViewModel : ViewModel() {
 
     private var currentApiKey = "8r06MaG-mvbrgGVymkGGOPVCS3_CT21dIogoAhvSH_M"
 
+    init {
+        createEmptyBoard()
+    }
+
+    /** Создаёт пустое поле 9×9 */
+    private fun createEmptyBoard() {
+        board.clear()
+        repeat(9) {
+            board.add(List(9) { SudokuCell(0, true, 0) })
+        }
+    }
 
     fun startNewGame() {
         Log.e("Start game", "On press button")
         viewModelScope.launch {
             isLoading.value = true
             isGameWon.value = false
-            board.clear()
+            createEmptyBoard()
 
             var attempt = 0
             val maxAttempts = 5
@@ -128,6 +139,7 @@ class SudokuViewModel : ViewModel() {
 
             (newBoard.last() as MutableList).add(SudokuCell(value, isEditable, solutionValue))
         }
+        board.clear()
         board.addAll(newBoard)
     }
 

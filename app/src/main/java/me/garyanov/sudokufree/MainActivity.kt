@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,12 +68,7 @@ fun SudokuScreen(viewModel: SudokuViewModel = viewModel()) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(
-            text = "Судоку",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(8.dp)
-        )
+        Spacer(modifier = Modifier.height(40.dp))
 
         // Панель управления
         Row(
@@ -82,8 +78,14 @@ fun SudokuScreen(viewModel: SudokuViewModel = viewModel()) {
         ) {
             // Кнопка новой игры
             Button(onClick = { viewModel.startNewGame() }) {
-                Text("Новая игра")
+                Text(stringResource(R.string.new_game))
             }
+
+            Text(
+                text = stringResource(R.string.sudoku_title),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(8.dp)
+            )
 
             // Выбор сложности
             Box {
@@ -109,19 +111,37 @@ fun SudokuScreen(viewModel: SudokuViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Если игра ещё не загружена — показываем пустую сетку 9×9
+        val displayBoard = viewModel.board.ifEmpty {
+            List(9) { List(9) { SudokuCell(0, true, 0) } }
+        }
         // Игровое поле
         if (viewModel.isLoading.value) {
             CircularProgressIndicator()
         } else {
             SudokuBoard(
-                board = viewModel.board,
+                board = displayBoard,
                 selectedCell = viewModel.selectedCell.value,
-                onCellClick = { r, c -> viewModel.onCellClicked(r, c) },
+                onCellClick = { r, c ->
+                    // Клики обрабатываем только когда реальная доска загружена
+                    if (viewModel.board.isNotEmpty())
+                        viewModel.onCellClicked(r, c)
+                },
                 isGameWon = viewModel.isGameWon.value
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        if (viewModel.isGameWon.value) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.you_won),
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
+            )
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Клавиатура
         NumericKeypad(
@@ -208,46 +228,50 @@ fun NumericKeypad(
     onHint: () -> Unit,
     isGameWon: Boolean
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Ряд 1-9
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            (1..9).forEach { num ->
-                Button(
-                    onClick = { onKeyPress(num) },
-                    enabled = !isGameWon,
-                    modifier = Modifier.size(38.dp),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text("$num", fontSize = 18.sp)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 3 ряда по 3 кнопки (1-9)
+        for (row in 0 until 3) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                for (col in 0 until 3) {
+                    val number = row * 3 + col + 1
+                    Button(
+                        onClick = { onKeyPress(number) },
+                        enabled = !isGameWon,
+                        modifier = Modifier.size(64.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("$number", fontSize = 24.sp)
+                    }
                 }
             }
         }
 
-        // Ряд 0 и Подсказка
+        // Ряд с C и ?
         Row(
-            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
         ) {
             Button(
-                onClick = { onKeyPress(0) }, // 0 = очистить
+                onClick = { onKeyPress(0) },
                 enabled = !isGameWon,
-                modifier = Modifier.size(60.dp, 38.dp),
+                modifier = Modifier.size(80.dp, 64.dp),
                 contentPadding = PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
             ) {
-                Text("C", fontSize = 18.sp) // C = Clear
+                Text("C", fontSize = 24.sp)
             }
             Button(
                 onClick = { onHint() },
                 enabled = !isGameWon,
-                modifier = Modifier.size(60.dp, 38.dp),
+                modifier = Modifier.size(80.dp, 64.dp),
                 contentPadding = PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
             ) {
-                Text("?", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("?", fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
