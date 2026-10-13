@@ -40,7 +40,7 @@ class SudokuViewModel : ViewModel() {
     private var currentApiKey = "8r06MaG-mvbrgGVymkGGOPVCS3_CT21dIogoAhvSH_M"
 
     init {
-        createEmptyBoard()
+        startNewGame()
     }
 
     /** Создаёт пустое поле 9×9 */
@@ -63,6 +63,7 @@ class SudokuViewModel : ViewModel() {
             var success = false
 
             while (attempt < maxAttempts && !success) {
+                attempt++
                 try {
                     // Подготовка тела запроса
                     val body = SudokuRequest(
@@ -82,13 +83,11 @@ class SudokuViewModel : ViewModel() {
                         val newKeyResponse = api.createKey()
                         Log.e("New key", newKeyResponse.toString())
                         currentApiKey = newKeyResponse.key
-                        // Не увеличиваем счетчик попыток для этой ошибки, просто повторяем запрос с новым ключом
                         continue
                     }
 
                     // Проверка 2: Другие ошибки API
                     if (response.error != null) {
-                        attempt++ // Считаем как неудачную попытку
                         delay(500) // Небольшая пауза перед retry
                         continue
                     }
@@ -98,15 +97,12 @@ class SudokuViewModel : ViewModel() {
                         parseBoard(response.puzzle, response.solution)
                         success = true
                         Log.e("Parse board", "success")
-                    } else {
-                        attempt++ // Неполные данные - считаем за ошибку
                     }
 
                 } catch (e: Exception) {
                     // Ошибки сети (нет интернета, таймаут, 500-е ошибки сервера)
                     Log.e("Request error", e.stackTraceToString())
                     e.printStackTrace()
-                    attempt++
                     if (attempt < maxAttempts) {
                         delay(1000) // Ждем секунду перед retry
                     }

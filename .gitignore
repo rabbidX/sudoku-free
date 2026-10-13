@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+app/release/
+sudoku-release.keystore.jks
