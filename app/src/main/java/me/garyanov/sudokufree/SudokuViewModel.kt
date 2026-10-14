@@ -30,6 +30,9 @@ class SudokuViewModel : ViewModel() {
     var isLoading = mutableStateOf(false)
         private set
 
+    var isNotesMode = mutableStateOf(false)
+        private set
+
     // Инициализация Retrofit (обычно через DI, но для простоты тут)
     private val api = Retrofit.Builder()
         .baseUrl("https://www.youdosudoku.com/")
@@ -56,6 +59,7 @@ class SudokuViewModel : ViewModel() {
         viewModelScope.launch {
             isLoading.value = true
             isGameWon.value = false
+            isNotesMode.value = false
             createEmptyBoard()
 
             var attempt = 0
@@ -146,29 +150,56 @@ class SudokuViewModel : ViewModel() {
         }
     }
 
-    fun onKeyPressed(number: Int) {
-        val (row, col) = selectedCell.value ?: return
-        if (!board[row][col].isEditable) return
+    fun toggleNotesMode() {
+        isNotesMode.value = !isNotesMode.value
+    }
 
-        // Обновляем значение
-        val currentCell = board[row][col]
-        board[row] = board[row].toMutableList().also {
-            it[col] = currentCell.copy(value = number)
+    fun onKeyPressed(number: Int) {
+        if (number == 0) {
+            eraseCurrentCell()
+            return
         }
 
-        // Если ввели 0, это очистка, победу не проверяем
-        if (number == 0) return
+        val (row, col) = selectedCell.value ?: return
+        val currentCell = board[row][col]
+        if (!currentCell.isEditable) return
 
-        // Проверка победы
+        if (isNotesMode.value) {
+            if (currentCell.value != 0 || number in currentCell.notes || currentCell.notes.size >= 4) return
+            board[row] = board[row].toMutableList().also {
+                it[col] = currentCell.copy(notes = currentCell.notes + number)
+            }
+            return
+        }
+
+        board[row] = board[row].toMutableList().also {
+            it[col] = currentCell.copy(value = number, notes = emptyList())
+        }
         checkWin()
+    }
+
+    fun eraseCurrentCell() {
+        val (row, col) = selectedCell.value ?: return
+        val currentCell = board[row][col]
+        if (!currentCell.isEditable) return
+
+        val updatedCell = if (currentCell.notes.isNotEmpty()) {
+            currentCell.copy(notes = currentCell.notes.dropLast(1))
+        } else {
+            currentCell.copy(value = 0, notes = emptyList())
+        }
+        board[row] = board[row].toMutableList().also { it[col] = updatedCell }
     }
 
     fun useHint() {
         val (row, col) = selectedCell.value ?: return
-        if (!board[row][col].isEditable) return
+        val currentCell = board[row][col]
+        if (!currentCell.isEditable) return
 
-        val solutionValue = board[row][col].solutionValue
-        onKeyPressed(solutionValue)
+        board[row] = board[row].toMutableList().also {
+            it[col] = currentCell.copy(value = currentCell.solutionValue, notes = emptyList())
+        }
+        checkWin()
     }
 
     fun setDifficulty(diff: String) {
