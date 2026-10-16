@@ -83,6 +83,9 @@ fun SudokuScreen(viewModel: SudokuViewModel = viewModel()) {
         val sectionGap = if (compact) 6.dp else 16.dp
         val controlsHeight = if (compact) 84.dp else 112.dp
         val winMessageSpace = if (viewModel.isGameWon.value) 48.dp else 0.dp
+        val completedDigits = (1..9).filter { digit ->
+            viewModel.board.sumOf { row -> row.count { cell -> cell.value == digit } } >= 9
+        }.toSet()
         val boardSize = minOf(boxScope.maxWidth - 16.dp,
             boxScope.maxHeight - controlsHeight - sectionGap * 2 - keySize * 4 - keyGap * 3 - winMessageSpace - 16.dp
         ).coerceAtLeast(96.dp)
@@ -224,6 +227,7 @@ fun SudokuScreen(viewModel: SudokuViewModel = viewModel()) {
                 onHint = { viewModel.useHint() },
                 onToggleNotes = { viewModel.toggleNotesMode() },
                 isNotesMode = viewModel.isNotesMode.value,
+                completedDigits = completedDigits,
                 isGameWon = viewModel.isGameWon.value,
                 keySize = keySize,
                 keyGap = keyGap
@@ -313,6 +317,7 @@ fun NumericKeypad(
     onHint: () -> Unit,
     onToggleNotes: () -> Unit,
     isNotesMode: Boolean,
+    completedDigits: Set<Int>,
     isGameWon: Boolean,
     keySize: androidx.compose.ui.unit.Dp = 64.dp,
     keyGap: androidx.compose.ui.unit.Dp = 12.dp
@@ -330,9 +335,13 @@ fun NumericKeypad(
                     val number = row * 3 + col + 1
                     Button(
                         onClick = { onKeyPress(number) },
-                        enabled = !isGameWon,
+                        enabled = !isGameWon && number !in completedDigits,
                         modifier = Modifier.size(keySize),
-                        contentPadding = PaddingValues(0.dp)
+                        contentPadding = PaddingValues(0.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            disabledContainerColor = Color.LightGray,
+                            disabledContentColor = Color.DarkGray
+                        )
                     ) {
                         Text("$number", fontSize = if (keySize <= 40.dp) 18.sp else if (keySize <= 48.dp) 20.sp else 24.sp)
                     }
