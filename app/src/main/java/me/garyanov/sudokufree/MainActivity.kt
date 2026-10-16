@@ -90,7 +90,7 @@ fun SudokuScreen(viewModel: SudokuViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(backgroundColor)
-                .padding(horizontal = if (compact) 4.dp else 8.dp, vertical = 8.dp),
+                .padding(horizontal = if (compact) 4.dp else 8.dp, vertical = 0.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
