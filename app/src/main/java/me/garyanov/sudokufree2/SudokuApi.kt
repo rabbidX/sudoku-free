@@ -1,8 +1,8 @@
-package me.garyanov.sudokufree
+package me.garyanov.sudokufree2
 
-import me.garyanov.sudokufree.model.KeyResponse
-import me.garyanov.sudokufree.model.SudokuRequest
-import me.garyanov.sudokufree.model.SudokuResponse
+import me.garyanov.sudokufree2.model.KeyResponse
+import me.garyanov.sudokufree2.model.SudokuRequest
+import me.garyanov.sudokufree2.model.SudokuResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header

@@ -1,10 +1,19 @@
+import java.util.Properties
+
+// Чтение файла keystore.properties из корня проекта
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "me.garyanov.sudokufree"
+    namespace = "me.garyanov.sudokufree2"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -12,13 +21,26 @@ android {
     }
 
     defaultConfig {
-        applicationId = "me.garyanov.sudokufree"
+        applicationId = "me.garyanov.sudokufree2"
         minSdk = 28
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 1
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // 1. ДОБАВЛЯЕМ БЛОК ПОДПИСИ
+    signingConfigs {
+        create("release") {
+            // Проверяем, существует ли файл keystore.properties, чтобы избежать ошибок
+            if (keystorePropertiesFile.exists()) {
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
     }
 
     buildTypes {
@@ -28,6 +50,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 2. ПРИМЕНЯЕМ ПОДПИСЬ К РЕЛИЗУ
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

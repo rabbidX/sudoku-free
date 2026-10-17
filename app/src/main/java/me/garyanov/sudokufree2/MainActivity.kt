@@ -1,4 +1,4 @@
-package me.garyanov.sudokufree
+package me.garyanov.sudokufree2
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import me.garyanov.sudokufree.model.SudokuCell
+import me.garyanov.sudokufree2.model.SudokuCell
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {

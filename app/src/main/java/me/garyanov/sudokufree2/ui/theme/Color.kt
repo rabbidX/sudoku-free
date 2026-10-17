@@ -1,4 +1,4 @@
-package me.garyanov.sudokufree.ui.theme
+package me.garyanov.sudokufree2.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

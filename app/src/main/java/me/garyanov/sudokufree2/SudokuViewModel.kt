@@ -1,4 +1,4 @@
-package me.garyanov.sudokufree
+package me.garyanov.sudokufree2
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
@@ -7,8 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import me.garyanov.sudokufree.model.SudokuCell
-import me.garyanov.sudokufree.model.SudokuRequest
+import me.garyanov.sudokufree2.model.SudokuCell
+import me.garyanov.sudokufree2.model.SudokuRequest
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 

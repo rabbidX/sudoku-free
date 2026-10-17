@@ -1,4 +1,4 @@
-package me.garyanov.sudokufree.model
+package me.garyanov.sudokufree2.model
 
 // Состояние одной ячейки
 data class SudokuCell(

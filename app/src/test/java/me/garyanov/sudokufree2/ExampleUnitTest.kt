@@ -1,4 +1,4 @@
-package me.garyanov.sudokufree
+package me.garyanov.sudokufree2
 
 import org.junit.Test
 
